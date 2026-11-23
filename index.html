@@ -109,6 +109,19 @@ html, body {
 	border-radius: 999px;
 }
 
+#status-label {
+	position: absolute;
+	bottom: 5.5%;
+	left: 0;
+	right: 0;
+	text-align: center;
+	color: #eef4ff;
+	font-size: 14px;
+	font-weight: 700;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+	display: none;
+}
+
 #status-notice {
 	background-color: #5b3943;
 	border-radius: 0.75rem;
@@ -207,12 +220,13 @@ html, body {
 		<div id="status">
 			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
 			<progress id="status-progress"></progress>
+			<div id="status-label"></div>
 			<div id="status-notice"></div>
 		</div>
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":56960484,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":18992188,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -295,6 +309,7 @@ const engine = new Engine(GODOT_CONFIG);
 
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
+	const statusLabel = document.getElementById('status-label');
 	const statusNotice = document.getElementById('status-notice');
 
 	let initializing = true;
@@ -311,6 +326,9 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 		statusOverlay.style.visibility = 'visible';
 		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
+		if (statusLabel) {
+			statusLabel.style.display = mode === 'progress' ? 'block' : 'none';
+		}
 		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
 		statusMode = mode;
 	}
@@ -372,11 +390,26 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	} else {
 		setStatusMode('progress');
+		if (statusLabel) {
+			statusLabel.textContent = isAr ? 'جارٍ تحميل اللعبة...' : 'Loading game...';
+		}
 		engine.startGame({
 			'onProgress': function (current, total) {
 				if (current > 0 && total > 0) {
 					statusProgress.value = current;
 					statusProgress.max = total;
+					if (statusLabel) {
+						const pct = Math.min(100, Math.round((current / total) * 100));
+						const curMb = (current / 1048576).toFixed(1);
+						const totMb = (total / 1048576).toFixed(1);
+						if (pct >= 100) {
+							statusLabel.textContent = isAr ? 'جارٍ تشغيل اللعبة...' : 'Starting game...';
+						} else {
+							statusLabel.textContent = isAr
+								? `جارٍ تحميل اللعبة... ${pct}% (${curMb} / ${totMb} MB)`
+								: `Loading... ${pct}% (${curMb} / ${totMb} MB)`;
+						}
+					}
 				} else {
 					statusProgress.removeAttribute('value');
 					statusProgress.removeAttribute('max');
