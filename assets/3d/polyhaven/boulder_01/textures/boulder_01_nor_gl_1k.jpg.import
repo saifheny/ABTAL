@@ -3,23 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://iahuitbah3dv"
-path.s3tc="res://.godot/imported/boulder_01_nor_gl_1k.jpg-6060132118a745febca1f1ee20e380c2.s3tc.ctex"
-path.etc2="res://.godot/imported/boulder_01_nor_gl_1k.jpg-6060132118a745febca1f1ee20e380c2.etc2.ctex"
+path="res://.godot/imported/boulder_01_nor_gl_1k.jpg-6060132118a745febca1f1ee20e380c2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/3d/polyhaven/boulder_01/textures/boulder_01_nor_gl_1k.jpg"
-dest_files=["res://.godot/imported/boulder_01_nor_gl_1k.jpg-6060132118a745febca1f1ee20e380c2.s3tc.ctex", "res://.godot/imported/boulder_01_nor_gl_1k.jpg-6060132118a745febca1f1ee20e380c2.etc2.ctex"]
+dest_files=["res://.godot/imported/boulder_01_nor_gl_1k.jpg-6060132118a745febca1f1ee20e380c2.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

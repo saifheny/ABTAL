@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bdybil5013xb"
-path.s3tc="res://.godot/imported/bat_roughness.png-94036dfaf6f1957eaa78dccb08feb57d.s3tc.ctex"
-path.etc2="res://.godot/imported/bat_roughness.png-94036dfaf6f1957eaa78dccb08feb57d.etc2.ctex"
+path="res://.godot/imported/bat_roughness.png-94036dfaf6f1957eaa78dccb08feb57d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "75385c294c73d4b038d6c19964006110"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/3d/kingdom/monsters/bat_roughness.png"
-dest_files=["res://.godot/imported/bat_roughness.png-94036dfaf6f1957eaa78dccb08feb57d.s3tc.ctex", "res://.godot/imported/bat_roughness.png-94036dfaf6f1957eaa78dccb08feb57d.etc2.ctex"]
+dest_files=["res://.godot/imported/bat_roughness.png-94036dfaf6f1957eaa78dccb08feb57d.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.72
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

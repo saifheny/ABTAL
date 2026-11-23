@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cjt1yu7tbgcy7"
-path.s3tc="res://.godot/imported/mushroom_mushroom_albedo.png-69534d374b0fe3b7e4bb4e01a8453d9f.s3tc.ctex"
-path.etc2="res://.godot/imported/mushroom_mushroom_albedo.png-69534d374b0fe3b7e4bb4e01a8453d9f.etc2.ctex"
+path="res://.godot/imported/mushroom_mushroom_albedo.png-69534d374b0fe3b7e4bb4e01a8453d9f.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "93f5d4a79b7f711c5c0fae40719d7d0f"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/3d/gdquest/props/mushroom_mushroom_albedo.png"
-dest_files=["res://.godot/imported/mushroom_mushroom_albedo.png-69534d374b0fe3b7e4bb4e01a8453d9f.s3tc.ctex", "res://.godot/imported/mushroom_mushroom_albedo.png-69534d374b0fe3b7e4bb4e01a8453d9f.etc2.ctex"]
+dest_files=["res://.godot/imported/mushroom_mushroom_albedo.png-69534d374b0fe3b7e4bb4e01a8453d9f.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.72
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

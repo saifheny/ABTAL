@@ -423,39 +423,61 @@ func _get_land_segment_bounds(seg_idx: int) -> Vector2:
 
 
 func _build_environment() -> void:
+	var compat := World3DBackdrop.is_compat_renderer()
 	_world_env = WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	var sm := PanoramaSkyMaterial.new()
-	var hdr_path := "res://assets/hdri/belfast_sunset_puresky_2k.hdr" if (to_level % 3 == 0) else "res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr"
-	sm.panorama = load(hdr_path)
-	sm.energy_multiplier = 1.0
-	sky.sky_material = sm
-	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.60
-	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	# Strictly zero bloom/glow glare!
-	env.glow_enabled = false
-	env.fog_enabled = true
-	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color(0.76, 0.88, 0.98)
-	env.fog_depth_begin = 42.0
-	env.fog_depth_end = 195.0
-	env.fog_density = 0.11
+	if compat:
+		var is_sunset := (to_level % 3 == 0)
+		var psm := ProceduralSkyMaterial.new()
+		psm.sky_top_color = Color(0.34, 0.42, 0.74) if is_sunset else Color(0.24, 0.56, 0.94)
+		psm.sky_horizon_color = Color(0.99, 0.68, 0.44) if is_sunset else Color(0.74, 0.89, 1.0)
+		psm.sky_curve = 0.18
+		psm.ground_bottom_color = Color(0.32, 0.45, 0.34)
+		psm.ground_horizon_color = psm.sky_horizon_color
+		psm.ground_curve = 0.08
+		psm.sun_angle_max = 18.0
+		psm.energy_multiplier = 1.12
+		sky.sky_material = psm
+		env.sky = sky
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env.ambient_light_color = Color(0.98, 0.86, 0.74) if is_sunset else Color(0.86, 0.92, 1.0)
+		env.ambient_light_energy = 0.90
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+		env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+		env.glow_enabled = false
+		env.fog_enabled = false
+	else:
+		var sm := PanoramaSkyMaterial.new()
+		var hdr_path := "res://assets/hdri/belfast_sunset_puresky_2k.hdr" if (to_level % 3 == 0) else "res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr"
+		sm.panorama = load(hdr_path)
+		sm.energy_multiplier = 1.0
+		sky.sky_material = sm
+		env.sky = sky
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_energy = 0.60
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+		env.tonemap_mode = Environment.TONE_MAPPER_ACES
+		# Strictly zero bloom/glow glare!
+		env.glow_enabled = false
+		env.fog_enabled = true
+		env.fog_mode = Environment.FOG_MODE_DEPTH
+		env.fog_light_color = Color(0.76, 0.88, 0.98)
+		env.fog_depth_begin = 42.0
+		env.fog_depth_end = 195.0
+		env.fog_density = 0.11
 	_world_env.environment = env
 	add_child(_world_env)
 
 	_sun = DirectionalLight3D.new()
 	_sun.rotation_degrees = Vector3(-42.0, 32.0, 0.0)
-	_sun.light_energy = 0.95
+	_sun.light_energy = 1.32 if compat else 0.95
 	_sun.light_color = Color(1.0, 0.96, 0.90)
 	_sun.shadow_enabled = true
 	_sun.shadow_bias = 0.08
-	_sun.directional_shadow_blend_splits = not OS.has_feature("mobile")
-	_sun.directional_shadow_max_distance = 36.0 if OS.has_feature("mobile") else 58.0
+	_sun.directional_shadow_blend_splits = not (compat or OS.has_feature("mobile"))
+	_sun.directional_shadow_max_distance = 32.0 if compat else (36.0 if OS.has_feature("mobile") else 58.0)
 	add_child(_sun)
 
 

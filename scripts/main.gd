@@ -208,7 +208,12 @@ var _shake_amp: float = 0.0
 var _intro_tween: Tween
 var _modal_tween: Tween
 var _level_dirty: bool = false
+var _built_level: int = -1
 var _closing_modal: bool = false
+var _save_dirty: bool = false
+var _save_debounce_t: float = 0.0
+var _prewarm_node: Node3D
+var _prewarm_frames: int = 0
 
 var _cam_pos_cur: Vector3 = Vector3(3.6, 2.0, 6.2)
 var _cam_look_cur: Vector3 = Vector3(2.2, 0.90, -0.3)
@@ -295,6 +300,7 @@ func _ready() -> void:
 	get_tree().set_quit_on_go_back(false)
 	if OS.has_feature("mobile"):
 		DisplayServer.screen_set_keep_on(true)
+	if OS.has_feature("mobile") or OS.has_feature("web"):
 		var vp := get_viewport()
 		vp.msaa_3d = Viewport.MSAA_DISABLED
 		vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
@@ -308,6 +314,8 @@ func _ready() -> void:
 	_sync_audio_ui()
 	apply_language_refresh()
 	_enter_home_hub()
+	if OS.has_feature("web"):
+		_prewarm_web_shaders()
 
 
 func _on_viewport_size_changed() -> void:
@@ -320,6 +328,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		_handle_android_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_flush_pending_save()
 		if OS.has_feature("mobile") and (state == GameState.PLAYING or state == GameState.JOURNEY):
 			if _ad_service == null or (not _ad_service.visible and not _ad_service.is_showing_native_ad()):
 				_toggle_pause()
@@ -388,7 +397,63 @@ func _rebuild_level(lvl: int) -> void:
 	_cam_look_cur = Vector3(_player.global_position.x + 0.85, 0.90, -0.3)
 	_camera.position = _cam_pos_cur
 	_camera.look_at(_cam_look_cur)
+	_built_level = lvl
 	_level_dirty = false
+
+
+func _set_modal_blur(amount: float) -> void:
+	if _blur_mat and not OS.has_feature("mobile") and not OS.has_feature("web"):
+		_blur_mat.set_shader_parameter("blur_amount", amount)
+
+
+func _flush_pending_save() -> void:
+	if _save_dirty and is_instance_valid(_progress):
+		_save_dirty = false
+		_save_debounce_t = 0.0
+		_progress.save_progress()
+
+
+func _prewarm_web_shaders() -> void:
+	if is_instance_valid(_prewarm_node):
+		_prewarm_node.queue_free()
+	_prewarm_node = Node3D.new()
+	_prewarm_node.position = Vector3(0.0, 0.0, -2.5)
+	_prewarm_node.scale = Vector3(0.001, 0.001, 0.001)
+	_camera.add_child(_prewarm_node)
+
+	var box_m := BoxMesh.new()
+	var mats: Array[Material] = []
+
+	var m_pbr := StandardMaterial3D.new()
+	m_pbr.metallic = 0.8
+	m_pbr.roughness = 0.2
+	mats.append(m_pbr)
+
+	var m_norm := StandardMaterial3D.new()
+	m_norm.normal_enabled = true
+	m_norm.normal_texture = load("res://assets/textures/ground/aerial_grass_rock_nor_gl.jpg")
+	mats.append(m_norm)
+
+	var m_alpha := StandardMaterial3D.new()
+	m_alpha.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m_alpha.albedo_color = Color(0.2, 0.8, 1.0, 0.65)
+	mats.append(m_alpha)
+
+	var m_unshaded := StandardMaterial3D.new()
+	m_unshaded.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mats.append(m_unshaded)
+
+	var m_water := ShaderMaterial.new()
+	m_water.shader = load("res://shaders/realistic_water.gdshader")
+	mats.append(m_water)
+
+	for mat in mats:
+		var mi := MeshInstance3D.new()
+		mi.mesh = box_m
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_prewarm_node.add_child(mi)
+	_prewarm_frames = 5
 
 
 func _build_blur_layer() -> void:
@@ -401,14 +466,14 @@ func _build_blur_layer() -> void:
 	_blur_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_blur_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_blur_mat = ShaderMaterial.new()
-	if not OS.has_feature("mobile"):
+	if not OS.has_feature("mobile") and not OS.has_feature("web"):
 		_blur_mat.shader = load("res://shaders/gaussian_blur.gdshader")
 		_blur_mat.set_shader_parameter("blur_amount", 0.0)
 		_blur_mat.set_shader_parameter("tint_color", Color(0.06, 0.10, 0.20, 1.0))
 		_blur_mat.set_shader_parameter("tint_alpha", 0.36)
 		_blur_rect.material = _blur_mat
 	else:
-		# Lightweight translucent scrim on mobile instead of expensive 9-tap screen blur shader
+		# Lightweight translucent scrim on mobile/web instead of expensive 9-tap screen blur shader
 		_blur_rect.color = Color(0.05, 0.08, 0.16, 0.50)
 	_blur_rect.visible = false
 	_blur_layer.add_child(_blur_rect)
@@ -609,7 +674,11 @@ func _on_audio_slider_changed(val: float) -> void:
 		_audio.set_master_volume(v)
 	if is_instance_valid(_progress):
 		_progress.game_volume = v
-		_progress.save_progress()
+		if OS.has_feature("web"):
+			_save_dirty = true
+			_save_debounce_t = 0.65
+		else:
+			_progress.save_progress()
 	_sync_audio_ui()
 
 
@@ -862,7 +931,7 @@ func _open_lang_modal() -> void:
 	_refresh_lang_rows()
 	_lang_layer.visible = true
 	_blur_rect.visible = true
-	_blur_mat.set_shader_parameter("blur_amount", 1.6)
+	_set_modal_blur(1.6)
 
 	_lang_dim.modulate.a = 0.0
 	_lang_card.pivot_offset = _lang_card.size * 0.5
@@ -896,7 +965,7 @@ func _close_lang_modal() -> void:
 		_lang_closing = false
 		_lang_layer.visible = false
 		_blur_rect.visible = false
-		_blur_mat.set_shader_parameter("blur_amount", 0.0)
+		_set_modal_blur(0.0)
 	)
 
 
@@ -1279,7 +1348,9 @@ func _update_characters_page_ui() -> void:
 # 3. FULL-SCREEN 3D WORLD MAP PAGE (10-STAGE S-CURVE OCEAN ARCHIPELAGO)
 # ==============================================================================
 
-func _build_map_page() -> void:
+func _ensure_map_stage_built() -> void:
+	if is_instance_valid(_map_stage):
+		return
 	_map_stage = WorldMap3D.new()
 	_map_stage.position = Vector3(-240.0, 20.0, 0.0)
 	_map_stage.visible = false
@@ -1288,7 +1359,11 @@ func _build_map_page() -> void:
 	_map_stage.stage_selected_by_proximity.connect(func(near_lvl: int):
 		if state == GameState.MAP_PAGE and near_lvl <= _progress.unlocked_level:
 			_progress.selected_level = near_lvl
-			_progress.save_progress()
+			if OS.has_feature("web"):
+				_save_dirty = true
+				_save_debounce_t = 0.65
+			else:
+				_progress.save_progress()
 			_refresh_map_pins()
 	)
 	_map_stage_pts = _map_stage.stage_pts
@@ -1296,6 +1371,11 @@ func _build_map_page() -> void:
 	_map_crown_pts = _map_stage.crown_pts
 	_map_beacon = _map_stage._beacon
 	_map_hero_vis = _map_stage._hero_vis
+
+
+func _build_map_page() -> void:
+	if not OS.has_feature("web"):
+		_ensure_map_stage_built()
 
 	_map_layer = CanvasLayer.new()
 	_map_layer.layer = 12
@@ -3042,8 +3122,7 @@ func _animate_modal_open(card: PanelContainer, blur_val: float) -> void:
 	if _modal_tween and _modal_tween.is_valid():
 		_modal_tween.kill()
 	_blur_rect.visible = true
-	if _blur_mat and not OS.has_feature("mobile"):
-		_blur_mat.set_shader_parameter("blur_amount", blur_val)
+	_set_modal_blur(blur_val)
 	_modal_layer.visible = true
 	_gameover_card.visible = (card == _gameover_card)
 	_victory_card.visible = (card == _victory_card)
@@ -3081,8 +3160,7 @@ func _close_modal_with_anim(card: PanelContainer, on_done: Callable) -> void:
 		_modal_layer.visible = false
 		card.visible = false
 		_blur_rect.visible = false
-		if _blur_mat and not OS.has_feature("mobile"):
-			_blur_mat.set_shader_parameter("blur_amount", 0.0)
+		_set_modal_blur(0.0)
 		on_done.call()
 	)
 
@@ -3123,6 +3201,7 @@ func _bank_current_run_coins(from_journey: bool) -> void:
 
 
 func _enter_home_hub() -> void:
+	_flush_pending_save()
 	_bank_current_run_coins(is_instance_valid(_journey_world))
 	get_tree().paused = false
 	_audio.set_paused_duck(false)
@@ -3138,7 +3217,7 @@ func _enter_home_hub() -> void:
 	if is_instance_valid(_white_fog_layer):
 		_white_fog_layer.visible = false
 	state = GameState.HOME_HUB
-	if _level_dirty:
+	if _level_dirty or _built_level != _progress.selected_level:
 		_rebuild_level(_progress.selected_level)
 	_backdrop.set_level_theme(_progress.selected_level)
 	_backdrop.set_character_name(selected_character_id)
@@ -3217,9 +3296,11 @@ func _enter_characters_page() -> void:
 
 
 func _enter_map_page() -> void:
+	_flush_pending_save()
 	_bank_current_run_coins(is_instance_valid(_journey_world))
 	_audio.play("click", 1.05, -10.0)
 	_exit_journey_cleanup()
+	_ensure_map_stage_built()
 	_hide_all_modals_except("")
 	if is_instance_valid(_audio_drawer):
 		_audio_drawer.visible = false
@@ -3230,7 +3311,7 @@ func _enter_map_page() -> void:
 	_chars_layer.visible = false
 	_backdrop.visible = false
 	_backdrop.set_intro_blur(0.0)
-	if is_instance_valid(_backdrop.world_env):
+	if is_instance_valid(_backdrop.world_env) and not World3DBackdrop.is_compat_renderer():
 		_backdrop.world_env.environment = null
 	if is_instance_valid(_level_holder):
 		_level_holder.visible = false
@@ -3261,11 +3342,13 @@ func _start_run_from_hub() -> void:
 
 
 func _launch_selected_level() -> void:
+	_flush_pending_save()
 	var target := clampi(_progress.selected_level, 1, GameProgress.IMPLEMENTED_LEVELS)
 	if _progress.needs_journey_to(target):
 		_start_kingdom_journey(target - 1, target)
 	else:
-		_rebuild_level(target)
+		if _level_dirty or _built_level != target:
+			_rebuild_level(target)
 		_start_stage_direct()
 
 
@@ -3295,6 +3378,7 @@ func _exit_journey_cleanup() -> void:
 
 
 func _start_kingdom_journey(from_lvl: int, to_lvl: int) -> void:
+	_flush_pending_save()
 	get_tree().paused = false
 	_audio.set_paused_duck(false)
 	_set_pause_btn_icon(false)
@@ -3329,8 +3413,7 @@ func _start_kingdom_journey(from_lvl: int, to_lvl: int) -> void:
 	_map_layer.visible = false
 	_hud_layer.visible = false
 	_hide_all_modals_except("")
-	if _blur_mat and not OS.has_feature("mobile"):
-		_blur_mat.set_shader_parameter("blur_amount", 0.0)
+	_set_modal_blur(0.0)
 
 	_journey_from_lvl = from_lvl
 	_journey_to_lvl = to_lvl
@@ -3376,6 +3459,7 @@ func _start_kingdom_journey(from_lvl: int, to_lvl: int) -> void:
 
 func _start_stage_direct() -> void:
 	# Direct stage start on single Play tap: controls active immediately, camera glides smoothly in _process
+	_flush_pending_save()
 	if _intro_tween and _intro_tween.is_valid():
 		_intro_tween.kill()
 	get_tree().paused = false
@@ -3384,7 +3468,7 @@ func _start_stage_direct() -> void:
 	_reset_joy_knob()
 	if is_instance_valid(_map_stage):
 		_map_stage.visible = false
-	if _level_dirty:
+	if _level_dirty or _built_level != _progress.selected_level:
 		_rebuild_level(_progress.selected_level)
 	_level_dirty = true
 	_banked_run_coins = 0
@@ -3461,8 +3545,7 @@ func _restart_from_modal() -> void:
 		_ad_service.abort_flow()
 	get_tree().paused = false
 	_hide_all_modals_except("")
-	if _blur_mat and not OS.has_feature("mobile"):
-		_blur_mat.set_shader_parameter("blur_amount", 0.0)
+	_set_modal_blur(0.0)
 	if is_instance_valid(_map_stage):
 		_map_stage.visible = false
 	if _was_in_journey_before_pause or _won_during_journey:
@@ -3611,6 +3694,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if _save_dirty:
+		_save_debounce_t -= delta
+		if _save_debounce_t <= 0.0:
+			_flush_pending_save()
+	if _prewarm_frames > 0:
+		_prewarm_frames -= 1
+		if _prewarm_frames <= 0 and is_instance_valid(_prewarm_node):
+			_prewarm_node.queue_free()
+			_prewarm_node = null
+
 	if state == GameState.PAUSED:
 		return
 
@@ -3997,8 +4090,7 @@ func _on_revive_requested() -> void:
 		_audio.set_paused_duck(false)
 		_set_pause_btn_icon(false)
 		_hide_all_modals_except("")
-		if _blur_mat and not OS.has_feature("mobile"):
-			_blur_mat.set_shader_parameter("blur_amount", 0.0)
+		_set_modal_blur(0.0)
 		if _was_in_journey_before_pause and is_instance_valid(_journey_world):
 			_was_in_journey_before_pause = false
 			state = GameState.JOURNEY
@@ -4043,8 +4135,7 @@ func _on_skip_requested(from_card: PanelContainer) -> void:
 		_set_pause_btn_icon(false)
 		_reset_joy_knob()
 		_hide_all_modals_except("")
-		if _blur_mat and not OS.has_feature("mobile"):
-			_blur_mat.set_shader_parameter("blur_amount", 0.0)
+		_set_modal_blur(0.0)
 		if _was_in_journey_before_pause:
 			_bank_current_run_coins(true)
 			var dst := clampi(_journey_to_lvl, 2, GameProgress.IMPLEMENTED_LEVELS)

@@ -45,7 +45,7 @@ func _get_mat(col: Color) -> StandardMaterial3D:
 func spawn_burst(pos: Vector3, count: int, col: Color, radial_spread: float = 0.85, speed_y: float = 2.1, radial_ring: bool = false) -> void:
 	if _items.is_empty():
 		return
-	var n := maxi(2, count / 2) if OS.has_feature("mobile") else count
+	var n := maxi(2, count / 2) if (OS.has_feature("mobile") or OS.has_feature("web")) else count
 	var mat := _get_mat(col)
 	for i in range(n):
 		var entry: Dictionary = _items[_cursor]

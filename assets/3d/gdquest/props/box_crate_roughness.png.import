@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdm7f1otkrjhk"
-path.s3tc="res://.godot/imported/box_crate_roughness.png-e7e243e2e4e4575a7092e947f8c8de9e.s3tc.ctex"
-path.etc2="res://.godot/imported/box_crate_roughness.png-e7e243e2e4e4575a7092e947f8c8de9e.etc2.ctex"
+path="res://.godot/imported/box_crate_roughness.png-e7e243e2e4e4575a7092e947f8c8de9e.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "f70424f3c698d0e3066ab6ab92aa6085"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/3d/gdquest/props/box_crate_roughness.png"
-dest_files=["res://.godot/imported/box_crate_roughness.png-e7e243e2e4e4575a7092e947f8c8de9e.s3tc.ctex", "res://.godot/imported/box_crate_roughness.png-e7e243e2e4e4575a7092e947f8c8de9e.etc2.ctex"]
+dest_files=["res://.godot/imported/box_crate_roughness.png-e7e243e2e4e4575a7092e947f8c8de9e.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.72
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

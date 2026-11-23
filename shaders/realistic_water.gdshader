@@ -46,16 +46,17 @@ void fragment() {
 	vec3 view_dir = normalize(VIEW);
 	float fresnel = pow(1.0 - clamp(dot(n_view, view_dir), 0.0, 1.0), 3.8);
 
-	vec3 base_col = mix(deep_color.rgb, shallow_color.rgb, clamp(h0 * 0.45 + 0.50, 0.0, 1.0));
-	float caustics = caustic_net(p * 0.55, t) * 0.24 + caustic_net(p * 1.15, -t * 0.8) * 0.14;
-	vec3 water_col = base_col + vec3(0.18, 0.46, 0.58) * caustics;
+	vec3 base_col = mix(deep_color.rgb, shallow_color.rgb, clamp(h0 * 0.45 + 0.56, 0.0, 1.0));
+	float caustics = caustic_net(p * 0.55, t) * 0.28 + caustic_net(p * 1.15, -t * 0.8) * 0.16;
+	vec3 water_col = base_col * 1.14 + vec3(0.22, 0.54, 0.68) * caustics;
 
-	vec3 final_col = mix(water_col, sky_reflect_color.rgb, clamp(fresnel * 0.62, 0.0, 0.72));
+	vec3 final_col = mix(water_col, sky_reflect_color.rgb, clamp(fresnel * 0.72, 0.0, 0.78));
 
 	ALBEDO = final_col;
+	EMISSION = final_col * 0.14;
 	NORMAL = n_view;
-	ROUGHNESS = 0.06;
-	METALLIC = 0.18;
-	SPECULAR = 0.90;
+	ROUGHNESS = 0.14;
+	METALLIC = 0.02;
+	SPECULAR = 0.65;
 	ALPHA = mix(shallow_color.a, deep_color.a, clamp(0.65 + fresnel * 0.35, 0.0, 1.0));
 }

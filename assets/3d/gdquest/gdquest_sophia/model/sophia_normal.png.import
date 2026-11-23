@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://csw1fhyonils3"
-path.s3tc="res://.godot/imported/sophia_normal.png-f55941ee3651d0fe2f7e0a6365fe6ca5.s3tc.ctex"
-path.etc2="res://.godot/imported/sophia_normal.png-f55941ee3651d0fe2f7e0a6365fe6ca5.etc2.ctex"
+path="res://.godot/imported/sophia_normal.png-f55941ee3651d0fe2f7e0a6365fe6ca5.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "298a25eded77ffe49d6eeb5cb93d6347"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/3d/gdquest/gdquest_sophia/model/sophia_normal.png"
-dest_files=["res://.godot/imported/sophia_normal.png-f55941ee3651d0fe2f7e0a6365fe6ca5.s3tc.ctex", "res://.godot/imported/sophia_normal.png-f55941ee3651d0fe2f7e0a6365fe6ca5.etc2.ctex"]
+dest_files=["res://.godot/imported/sophia_normal.png-f55941ee3651d0fe2f7e0a6365fe6ca5.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

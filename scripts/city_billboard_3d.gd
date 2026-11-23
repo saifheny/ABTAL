@@ -125,8 +125,9 @@ func _build_3d_billboard() -> void:
 		bulb.position = Vector3(lx, hh + 0.22, 0.60)
 		add_child(bulb)
 
-	var vp_w := 560 if OS.has_feature("mobile") else 720
-	var vp_h := 220 if OS.has_feature("mobile") else 280
+	var is_lite := OS.has_feature("mobile") or OS.has_feature("web")
+	var vp_w := 560 if is_lite else 720
+	var vp_h := 220 if is_lite else 280
 	_vp = SubViewport.new()
 	_vp.disable_3d = true
 	_vp.size = Vector2i(vp_w, vp_h)

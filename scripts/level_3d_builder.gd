@@ -111,7 +111,10 @@ func _ensure_cached_assets() -> void:
 	_sc_spike_block = load("res://assets/3d/kenney/platformer/spike-block.glb")
 	_sc_saw = load("res://assets/3d/kenney/platformer/saw.glb")
 	_sc_mushroom = load("res://assets/3d/gdquest/props/mushroom.glb")
-	_sc_boulder = load("res://assets/3d/polyhaven/boulder_01/boulder_01_1k.gltf")
+	if OS.has_feature("web"):
+		_sc_boulder = load("res://assets/3d/quaternius/nature_pack/Rock_1.glb")
+	else:
+		_sc_boulder = load("res://assets/3d/polyhaven/boulder_01/boulder_01_1k.gltf")
 	_sc_bee_bot = load("res://assets/3d/gdquest/gdquest_bee_bot/model/bee_bot.glb")
 	_sc_bat = load("res://assets/3d/kingdom/monsters/bat.glb")
 	_sc_cyborg = load("res://assets/3d/quaternius/cyberpunk_pack/Enemy_Flying.glb")
@@ -1652,8 +1655,8 @@ func _add_rolling_boulder(start_x: float, ground_y: float, speed: float, trigger
 	area.add_child(col)
 
 	var vis := _sc_boulder.instantiate()
-	vis.scale = Vector3.ONE * 1.1
-	vis.position = Vector3(0, -0.38, 0)
+	vis.scale = Vector3.ONE * (1.35 if OS.has_feature("web") else 1.1)
+	vis.position = Vector3(0, -0.35 if OS.has_feature("web") else -0.38, 0)
 	_apply_cull_and_mat(vis, null, 82.0)
 	area.add_child(vis)
 

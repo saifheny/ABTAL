@@ -8,6 +8,7 @@ var env_res: Environment
 var cam_attrs: CameraAttributesPractical
 var sun_light: DirectionalLight3D
 var _sky_mat: PanoramaSkyMaterial
+var _proc_sky_mat: ProceduralSkyMaterial
 var _meadow_mat: StandardMaterial3D
 var _lawn_mat: StandardMaterial3D
 var _water_mat: ShaderMaterial
@@ -20,9 +21,14 @@ var _cur_level: int = 1
 var _cur_char_id: String = "haneen"
 
 
+static func is_compat_renderer() -> bool:
+	return OS.has_feature("web") or RenderingServer.get_current_rendering_method() == "gl_compatibility"
+
+
 func _ready() -> void:
-	_hdr_day = load("res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
-	_hdr_sunset = load("res://assets/hdri/belfast_sunset_puresky_2k.hdr")
+	if not is_compat_renderer():
+		_hdr_day = load("res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
+		_hdr_sunset = load("res://assets/hdri/belfast_sunset_puresky_2k.hdr")
 	_build_environment_and_lights()
 	_build_3d_park_and_nature()
 	_build_3d_city_skyline_and_billboards()
@@ -40,44 +46,67 @@ func _apply_cull_distance(root: Node, dist: float = 95.0) -> void:
 
 
 func _build_environment_and_lights() -> void:
+	var compat := is_compat_renderer()
 	world_env = WorldEnvironment.new()
 	env_res = Environment.new()
 	env_res.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	_sky_mat = PanoramaSkyMaterial.new()
-	_sky_mat.panorama = _hdr_day
-	_sky_mat.energy_multiplier = 1.05
-	sky.sky_material = _sky_mat
-	env_res.sky = sky
-	env_res.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env_res.ambient_light_energy = 0.62
-	env_res.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env_res.tonemap_mode = Environment.TONE_MAPPER_ACES
-	# Disable bloom/glow glare ("ما يكونش فيه توهج يبوظ شكل اللعبة")
-	env_res.glow_enabled = false
-	env_res.fog_enabled = true
-	env_res.fog_mode = Environment.FOG_MODE_DEPTH
-	env_res.fog_light_color = Color(0.76, 0.87, 0.99)
-	env_res.fog_depth_begin = 28.0
-	env_res.fog_depth_end = 118.0
-	env_res.fog_density = 0.16
-	env_res.fog_sky_affect = 0.08
+	if compat:
+		_proc_sky_mat = ProceduralSkyMaterial.new()
+		_proc_sky_mat.sky_top_color = Color(0.24, 0.56, 0.94)
+		_proc_sky_mat.sky_horizon_color = Color(0.74, 0.89, 1.0)
+		_proc_sky_mat.sky_curve = 0.18
+		_proc_sky_mat.ground_bottom_color = Color(0.32, 0.45, 0.34)
+		_proc_sky_mat.ground_horizon_color = Color(0.68, 0.84, 0.96)
+		_proc_sky_mat.ground_curve = 0.08
+		_proc_sky_mat.sun_angle_max = 18.0
+		_proc_sky_mat.energy_multiplier = 1.12
+		sky.sky_material = _proc_sky_mat
+		env_res.sky = sky
+		env_res.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env_res.ambient_light_color = Color(0.86, 0.92, 1.0)
+		env_res.ambient_light_energy = 0.90
+		env_res.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+		env_res.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+		env_res.glow_enabled = false
+		env_res.fog_enabled = false
+	else:
+		_sky_mat = PanoramaSkyMaterial.new()
+		_sky_mat.panorama = _hdr_day
+		_sky_mat.energy_multiplier = 1.05
+		sky.sky_material = _sky_mat
+		env_res.sky = sky
+		env_res.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env_res.ambient_light_energy = 0.62
+		env_res.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+		env_res.tonemap_mode = Environment.TONE_MAPPER_ACES
+		# Disable bloom/glow glare ("ما يكونش فيه توهج يبوظ شكل اللعبة")
+		env_res.glow_enabled = false
+		env_res.fog_enabled = true
+		env_res.fog_mode = Environment.FOG_MODE_DEPTH
+		env_res.fog_light_color = Color(0.76, 0.87, 0.99)
+		env_res.fog_depth_begin = 28.0
+		env_res.fog_depth_end = 118.0
+		env_res.fog_density = 0.16
+		env_res.fog_sky_affect = 0.08
 	world_env.environment = env_res
 
-	cam_attrs = CameraAttributesPractical.new()
-	cam_attrs.dof_blur_far_enabled = false
-	cam_attrs.dof_blur_far_distance = 6.5
-	cam_attrs.dof_blur_far_transition = 6.0
-	cam_attrs.dof_blur_amount = 0.0
-	world_env.camera_attributes = cam_attrs
+	if not compat:
+		cam_attrs = CameraAttributesPractical.new()
+		cam_attrs.dof_blur_far_enabled = false
+		cam_attrs.dof_blur_far_distance = 6.5
+		cam_attrs.dof_blur_far_transition = 6.0
+		cam_attrs.dof_blur_amount = 0.0
+		world_env.camera_attributes = cam_attrs
 	add_child(world_env)
 
 	sun_light = DirectionalLight3D.new()
 	sun_light.rotation_degrees = Vector3(-42, 34, 0)
 	sun_light.light_color = Color(1.0, 0.96, 0.90)
-	sun_light.light_energy = 0.92
+	sun_light.light_energy = 1.32 if compat else 0.92
 	sun_light.shadow_enabled = true
-	sun_light.directional_shadow_max_distance = 36.0 if OS.has_feature("mobile") else 58.0
+	sun_light.directional_shadow_blend_splits = false if (compat or OS.has_feature("mobile")) else true
+	sun_light.directional_shadow_max_distance = 32.0 if compat else (36.0 if OS.has_feature("mobile") else 58.0)
 	add_child(sun_light)
 
 
@@ -92,7 +121,7 @@ func set_character_name(char_id: String) -> void:
 
 func set_level_theme(lvl: int) -> void:
 	_cur_level = lvl
-	if _sky_mat == null:
+	if _sky_mat == null and _proc_sky_mat == null:
 		return
 	const THEMES := [
 		{"sunset": false, "energy": 1.05, "sun_col": Color(1.0, 0.96, 0.90), "pitch": -42.0, "fog": Color(0.76, 0.87, 0.99), "meadow": Color(0.86, 0.94, 0.86), "lawn": Color(0.92, 1.0, 0.92), "ws": Color(0.10, 0.68, 0.90, 0.86), "wd": Color(0.04, 0.30, 0.62, 0.95)},
@@ -113,11 +142,26 @@ func set_level_theme(lvl: int) -> void:
 	]
 	var idx := clampi(lvl - 1, 0, 29) % THEMES.size()
 	var th: Dictionary = THEMES[idx]
-	_sky_mat.panorama = _hdr_sunset if th["sunset"] else _hdr_day
-	_sky_mat.energy_multiplier = th["energy"]
+	if _proc_sky_mat != null:
+		var fog_col: Color = th["fog"]
+		if th["sunset"]:
+			_proc_sky_mat.sky_top_color = Color(0.34, 0.42, 0.74)
+			_proc_sky_mat.sky_horizon_color = Color(0.99, 0.68, 0.44).lerp(fog_col, 0.35)
+			env_res.ambient_light_color = Color(0.98, 0.86, 0.74)
+		else:
+			_proc_sky_mat.sky_top_color = Color(0.24, 0.56, 0.94)
+			_proc_sky_mat.sky_horizon_color = fog_col.lerp(Color(0.76, 0.90, 1.0), 0.5)
+			env_res.ambient_light_color = Color(0.86, 0.92, 1.0)
+		_proc_sky_mat.ground_horizon_color = _proc_sky_mat.sky_horizon_color
+		_proc_sky_mat.energy_multiplier = float(th["energy"]) * 1.08
+		env_res.fog_enabled = false
+		sun_light.light_energy = 1.32
+	else:
+		_sky_mat.panorama = _hdr_sunset if th["sunset"] else _hdr_day
+		_sky_mat.energy_multiplier = th["energy"]
+		env_res.fog_light_color = th["fog"]
 	sun_light.light_color = th["sun_col"]
 	sun_light.rotation_degrees = Vector3(th["pitch"], 34.0, 0.0)
-	env_res.fog_light_color = th["fog"]
 	if _meadow_mat:
 		_meadow_mat.albedo_color = th["meadow"]
 		_lawn_mat.albedo_color = th["lawn"]
@@ -192,8 +236,8 @@ func _build_3d_park_and_nature() -> void:
 	var lake := MeshInstance3D.new()
 	var lm := PlaneMesh.new()
 	lm.size = Vector2(800.0, 8.2)
-	lm.subdivide_width = 96
-	lm.subdivide_depth = 6
+	lm.subdivide_width = 32 if OS.has_feature("web") else 96
+	lm.subdivide_depth = 3 if OS.has_feature("web") else 6
 	lake.mesh = lm
 	lake.material_override = _water_mat
 	lake.position = Vector3(325.0, -0.95, -21.0)
@@ -226,11 +270,14 @@ func _build_3d_park_and_nature() -> void:
 		if ResourceLoader.exists(bp):
 			bush_scenes.append(load(bp))
 
+	var is_web := OS.has_feature("web")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20263
 	var x := -16.0
-	while x < 670.0:
-		for row in range(2):
+	var max_x := 640.0 if is_web else 670.0
+	var step_idx := 0
+	while x < max_x:
+		for row in range(1 if is_web else 2):
 			if tree_scenes.size() > 0:
 				var sc := tree_scenes[rng.randi() % tree_scenes.size()]
 				var t_inst := sc.instantiate()
@@ -244,7 +291,7 @@ func _build_3d_park_and_nature() -> void:
 				if row == 0:
 					_trees.append(t_inst)
 
-		if bush_scenes.size() > 0:
+		if bush_scenes.size() > 0 and ((not is_web) or step_idx % 2 == 0):
 			var b_inst := bush_scenes[rng.randi() % bush_scenes.size()].instantiate()
 			b_inst.position = Vector3(x + rng.randf_range(-1.5, 1.5), -0.78, rng.randf_range(-3.8, -6.5))
 			b_inst.rotation_degrees.y = rng.randf_range(0.0, 360.0)
@@ -252,7 +299,8 @@ func _build_3d_park_and_nature() -> void:
 			_apply_cull_distance(b_inst, 72.0)
 			add_child(b_inst)
 
-		x += rng.randf_range(9.2, 13.5)
+		step_idx += 1
+		x += rng.randf_range(15.0, 21.0) if is_web else rng.randf_range(9.2, 13.5)
 
 
 func _build_3d_city_skyline_and_billboards() -> void:
@@ -277,26 +325,29 @@ func _build_3d_city_skyline_and_billboards() -> void:
 		if ResourceLoader.exists(p):
 			bld_scenes.append(load(p))
 
+	var is_web := OS.has_feature("web")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7712
 	var x := -22.0
-	while x < 680.0 and bld_scenes.size() > 0:
+	var max_bx := 640.0 if is_web else 680.0
+	while x < max_bx and bld_scenes.size() > 0:
 		var b1 := bld_scenes[rng.randi() % bld_scenes.size()].instantiate()
 		b1.position = Vector3(x, -1.25, rng.randf_range(-27.5, -32.5))
 		b1.scale = Vector3.ONE * rng.randf_range(4.0, 6.2)
 		_apply_cull_distance(b1, 105.0)
 		add_child(b1)
 
-		var b2 := bld_scenes[rng.randi() % 5].instantiate()
-		b2.position = Vector3(x + rng.randf_range(-3.0, 5.0), -1.25, rng.randf_range(-37.0, -45.0))
-		b2.scale = Vector3.ONE * rng.randf_range(5.8, 9.0)
-		_apply_cull_distance(b2, 115.0)
-		add_child(b2)
+		if not is_web:
+			var b2 := bld_scenes[rng.randi() % 5].instantiate()
+			b2.position = Vector3(x + rng.randf_range(-3.0, 5.0), -1.25, rng.randf_range(-37.0, -45.0))
+			b2.scale = Vector3.ONE * rng.randf_range(5.8, 9.0)
+			_apply_cull_distance(b2, 115.0)
+			add_child(b2)
 
-		x += rng.randf_range(16.5, 23.0)
+		x += rng.randf_range(26.0, 34.0) if is_web else rng.randf_range(16.5, 23.0)
 
 	var msgs := [Loc.hero_name(_cur_char_id), Loc.t("bb_msg_1"), Loc.t("bb_msg_2")]
-	var bb_xs := [22.0, 108.0, 198.0, 298.0, 398.0, 498.0, 588.0]
+	var bb_xs := [22.0, 175.0, 340.0, 510.0] if is_web else [22.0, 108.0, 198.0, 298.0, 398.0, 498.0, 588.0]
 	for i in range(bb_xs.size()):
 		var msg: String = msgs[i % msgs.size()]
 		var bb := CityBillboard3D.new()
@@ -356,4 +407,9 @@ func update_environment(delta: float, progress: float, cam_x: float = 0.0) -> vo
 		sun_light.light_color = Color(1.0, 0.96, 0.90).lerp(Color(1.0, 0.68, 0.38), sunset_k)
 		sun_light.rotation_degrees.x = lerpf(-42.0, -18.0, sunset_k)
 	if env_res and _cur_level == 1:
-		env_res.fog_light_color = Color(0.76, 0.87, 0.99).lerp(Color(0.98, 0.74, 0.56), sunset_k)
+		if _proc_sky_mat != null:
+			_proc_sky_mat.sky_horizon_color = Color(0.74, 0.89, 1.0).lerp(Color(0.99, 0.72, 0.50), sunset_k)
+			_proc_sky_mat.ground_horizon_color = _proc_sky_mat.sky_horizon_color
+			env_res.ambient_light_color = Color(0.86, 0.92, 1.0).lerp(Color(0.98, 0.86, 0.74), sunset_k)
+		else:
+			env_res.fog_light_color = Color(0.76, 0.87, 0.99).lerp(Color(0.98, 0.74, 0.56), sunset_k)

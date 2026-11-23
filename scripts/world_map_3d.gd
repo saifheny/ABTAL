@@ -68,32 +68,34 @@ func _road_height_at_z(z: float) -> float:
 
 
 func _build_sky_and_fog() -> void:
-	_world_env = WorldEnvironment.new()
-	var env := Environment.new()
-	env.background_mode = Environment.BG_SKY
-	var sky := Sky.new()
-	var sm := PanoramaSkyMaterial.new()
-	sm.panorama = load("res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
-	sky.sky_material = sm
-	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.65
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.glow_enabled = false
-	# Atmospheric mystery horizon haze so distant locked stages disappear into an infinite horizon!
-	env.fog_enabled = true
-	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color(0.74, 0.87, 0.98)
-	env.fog_depth_begin = 38.0
-	env.fog_depth_end = 135.0
-	env.fog_density = 0.24
-	_env_res = env
-	_world_env.environment = _env_res if visible else null
-	add_child(_world_env)
+	var compat := World3DBackdrop.is_compat_renderer()
+	if not compat:
+		_world_env = WorldEnvironment.new()
+		var env := Environment.new()
+		env.background_mode = Environment.BG_SKY
+		var sky := Sky.new()
+		var sm := PanoramaSkyMaterial.new()
+		sm.panorama = load("res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_2k.hdr")
+		sky.sky_material = sm
+		env.sky = sky
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_energy = 0.65
+		env.tonemap_mode = Environment.TONE_MAPPER_ACES
+		env.glow_enabled = false
+		# Atmospheric mystery horizon haze so distant locked stages disappear into an infinite horizon!
+		env.fog_enabled = true
+		env.fog_mode = Environment.FOG_MODE_DEPTH
+		env.fog_light_color = Color(0.74, 0.87, 0.98)
+		env.fog_depth_begin = 38.0
+		env.fog_depth_end = 135.0
+		env.fog_density = 0.24
+		_env_res = env
+		_world_env.environment = _env_res if visible else null
+		add_child(_world_env)
 
 	var sun := DirectionalLight3D.new()
-	sun.light_color = Color(1.0, 0.96, 0.88)
-	sun.light_energy = 1.15
+	sun.light_color = Color(1.0, 0.97, 0.90) if compat else Color(1.0, 0.96, 0.88)
+	sun.light_energy = 1.38 if compat else 1.15
 	sun.rotation_degrees = Vector3(-42.0, 32.0, 0.0)
 	add_child(sun)
 
@@ -113,8 +115,8 @@ func _build_endless_landscape(crown_builder: Callable) -> void:
 	var ocean := MeshInstance3D.new()
 	var om := PlaneMesh.new()
 	om.size = Vector2(540.0, 680.0)
-	om.subdivide_width = 40
-	om.subdivide_depth = 48
+	om.subdivide_width = 16 if OS.has_feature("web") else 40
+	om.subdivide_depth = 20 if OS.has_feature("web") else 48
 	ocean.mesh = om
 	var omat := ShaderMaterial.new()
 	omat.shader = load("res://shaders/realistic_water.gdshader")
@@ -188,12 +190,13 @@ func _build_endless_landscape(crown_builder: Callable) -> void:
 		add_child(ov_m)
 
 	# Subdivided curving Stone Adventure Path connecting Castles 1..30 smoothly
+	var road_subs := 1 if OS.has_feature("web") else 3
 	for i in range(stage_pts.size() - 1):
 		var a := stage_pts[i]
 		var b := stage_pts[i + 1]
-		for sub in range(3):
-			var t0 := float(sub) / 3.0
-			var t1 := float(sub + 1) / 3.0
+		for sub in range(road_subs):
+			var t0 := float(sub) / float(road_subs)
+			var t1 := float(sub + 1) / float(road_subs)
 			var p0 := a.lerp(b, t0)
 			var p1 := a.lerp(b, t1)
 			var seg := MeshInstance3D.new()
