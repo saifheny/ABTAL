@@ -1,0 +1,56 @@
+{
+  "background_color": "#0e275c",
+  "display": "standalone",
+  "icons": [
+    {
+      "sizes": "144x144",
+      "src": "index.144x144.png",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "sizes": "180x180",
+      "src": "index.180x180.png",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "sizes": "512x512",
+      "src": "index.512x512.png",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "index.512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "name": "Abtal - أبطال",
+  "orientation": "landscape",
+  "start_url": "./",
+  "id": "./",
+  "scope": "./",
+  "short_name": "Abtal",
+  "theme_color": "#0f2d6b",
+  "description": "3D action-adventure platformer with 30 stages & Kingdom Journeys"
+}
