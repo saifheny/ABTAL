@@ -1,0 +1,28 @@
+# Godot 4+ ignores
+.godot/
+
+# Exported builds (Web build is deployed on gh-pages branch)
+export/
+
+# Large Android Gradle build outputs & binaries
+android/build/.gradle/
+android/build/build/
+android/build/libs/
+android/build/src/main/assets/
+*.aar
+*.apk
+*.aab
+*.exe
+*.pck
+*.wasm
+
+# Godot Mono / C# local build artifacts (unused in Web export)
+.mono/
+data_*/
+mono_crash.*.json
+
+# OS / IDE clutter
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
